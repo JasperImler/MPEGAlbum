@@ -10,7 +10,6 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -93,7 +92,7 @@ public class MainActivity extends AppCompatActivity implements MediaAdapter.OnIt
     private void loadMediaFromStorage() {
         mediaItems.clear();
         // 加载指定路径的视频（Pictures/LivePhoto-Android目录）
-        loadSpecificPathVideos();
+        loadSpecificPathImages();
         mediaAdapter.notifyDataSetChanged();
 
         if (mediaItems.isEmpty()) {
@@ -204,13 +203,42 @@ public class MainActivity extends AppCompatActivity implements MediaAdapter.OnIt
         Collections.reverse(mediaItems);
     }
     
+    private void loadSpecificPathImages() {
+        // 获取sdk根目录
+        File picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        String appPath = picturesDir + File.separator + "LivePhoto-Android";
+        isDirExitAndCreate(appPath);
+        File targetDir = new File(appPath);
+    
+        if (targetDir.exists() && targetDir.isDirectory()) {
+            // 筛选JPG图片文件
+            File[] imageFiles = targetDir.listFiles(new FilenameFilter() {
+                @Override
+                public boolean accept(File dir, String name) {
+                    String lowerCaseName = name.toLowerCase();
+                    return lowerCaseName.endsWith(".jpg");
+                }
+            });
+            if (imageFiles != null && imageFiles.length > 0) {
+                for (File imageFile : imageFiles) {
+                    String imageName = imageFile.getName();
+                    String imagePath = imageFile.getAbsolutePath();
+    
+                    // 使用文件路径的哈希值作为ID
+                    long id = imagePath.hashCode();
+                    MediaItem mediaItem = new MediaItem(id, imageName, imagePath, MediaItem.TYPE_IMAGE);
+                    mediaItems.add(mediaItem);
+                }
+            }
+        }
+        Collections.reverse(mediaItems);
+    }
+    
     @Override
     public void onItemClick(MediaItem mediaItem) {
-        Toast.makeText(this,"click!!", Toast.LENGTH_SHORT).show();
-
-        if (mediaItem.getType() == MediaItem.TYPE_VIDEO) {
+        if (mediaItem.getType() == MediaItem.TYPE_IMAGE) {
             Intent intent = new Intent(this, VideoPlayerActivity.class);
-            intent.putExtra(VideoPlayerActivity.EXTRA_VIDEO_PATH, mediaItem.getPath());
+            intent.putExtra(VideoPlayerActivity.EXTRA_IMAGE_PATH, mediaItem.getPath());
             startActivity(intent);
         }
     }
